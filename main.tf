@@ -116,9 +116,9 @@ resource "proxmox_virtual_environment_vm" "talos_control_vm" {
     datastore_id = var.proxmox_image_datastore
     file_id      = proxmox_virtual_environment_download_file.talos_image.id
     interface    = "virtio0"
-    iothread     = true
     discard      = "on"
     size         = var.proxmox_control_vm_disk_size
+    file_format  = "raw"
   }
 
   # Cloud-init drive: present only when a static IP is configured for this node.
@@ -144,9 +144,8 @@ resource "proxmox_virtual_environment_vm" "talos_control_vm" {
   }
 
   network_device {
-    vlan_id     = var.proxmox_network_vlan_id
+    model  = "virtio"
     bridge      = var.proxmox_network_bridge
-    mac_address = lookup(var.control_plane_mac_addresses, each.key, null)
   }
 
   operating_system {
@@ -179,9 +178,9 @@ resource "proxmox_virtual_environment_vm" "talos_worker_vm" {
     datastore_id = var.proxmox_image_datastore
     file_id      = proxmox_virtual_environment_download_file.talos_image.id
     interface    = "virtio0"
-    iothread     = true
     discard      = "on"
     size         = var.proxmox_worker_vm_disk_size
+    file_format  = "raw"
   }
 
   # Cloud-init drive: present only when a static IP is configured for this node.
