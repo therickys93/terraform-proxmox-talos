@@ -12,6 +12,12 @@ variable "proxmox_image_datastore" {
   default     = "local-lvm"
 }
 
+variable "proxmox_cloudinit_datastore" {
+  description = "Datastore to put the cloud-init drive. Defaults to proxmox_image_datastore if not set."
+  type        = string
+  default     = null
+}
+
 variable "proxmox_control_vm_cores" {
   description = "Number of CPU cores for the control VMs"
   type        = number
@@ -81,14 +87,14 @@ variable "worker_mac_addresses" {
 }
 
 variable "control_plane_ip_addresses" {
-  description = "Map of control plane node names to static IP addresses in CIDR notation (e.g. 192.168.1.10/24). When set, a Talos machine config patch is automatically generated to configure the interface statically."
+  description = "Map of control plane node names to static IP addresses in CIDR notation (e.g. 192.168.1.10/24). Configures both the Proxmox cloud-init drive (for first boot) and the Talos machine config patch (for persistence)."
   type        = map(string)
   default     = {}
   nullable    = false
 }
 
 variable "worker_ip_addresses" {
-  description = "Map of worker node names to static IP addresses in CIDR notation (e.g. 192.168.1.20/24). When set, a Talos machine config patch is automatically generated to configure the interface statically."
+  description = "Map of worker node names to static IP addresses in CIDR notation (e.g. 192.168.1.20/24). Configures both the Proxmox cloud-init drive (for first boot) and the Talos machine config patch (for persistence)."
   type        = map(string)
   default     = {}
   nullable    = false
@@ -98,6 +104,12 @@ variable "network_gateway" {
   description = "Default gateway used when configuring static IP addresses via control_plane_ip_addresses or worker_ip_addresses"
   type        = string
   default     = null
+}
+
+variable "network_dns_servers" {
+  description = "List of DNS servers to configure via cloud-init when using static IPs"
+  type        = list(string)
+  default     = ["1.1.1.1", "8.8.8.8"]
 }
 
 variable "talos_cluster_name" {

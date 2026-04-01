@@ -1,6 +1,9 @@
 # Copyright (c) 2024 BB Tech Systems LLC
 
 locals {
+  # Effective cloud-init datastore: use dedicated one if set, otherwise fall back to image datastore
+  cloudinit_datastore = coalesce(var.proxmox_cloudinit_datastore, var.proxmox_image_datastore)
+
   # Resolve IP for each control node: prefer static IP if provided, else read from VM after boot
   control_node_ips = [
     for vm in keys(var.control_nodes) :
@@ -118,6 +121,28 @@ resource "proxmox_virtual_environment_vm" "talos_control_vm" {
     size         = var.proxmox_control_vm_disk_size
   }
 
+  # Cloud-init drive: present only when a static IP is configured for this node.
+  # Talos reads the network config from this drive at first boot, before the
+  # machine config is applied via talosctl. This ensures the node comes up with
+  # the correct IP immediately and is reachable for the apply step.
+  dynamic "initialization" {
+    for_each = contains(keys(var.control_plane_ip_addresses), each.key) ? [1] : []
+    content {
+      datastore_id = local.cloudinit_datastore
+
+      ip_config {
+        ipv4 {
+          address = var.control_plane_ip_addresses[each.key]
+          gateway = var.network_gateway
+        }
+      }
+
+      dns {
+        servers = var.network_dns_servers
+      }
+    }
+  }
+
   network_device {
     vlan_id     = var.proxmox_network_vlan_id
     bridge      = var.proxmox_network_bridge
@@ -157,6 +182,25 @@ resource "proxmox_virtual_environment_vm" "talos_worker_vm" {
     iothread     = true
     discard      = "on"
     size         = var.proxmox_worker_vm_disk_size
+  }
+
+  # Cloud-init drive: present only when a static IP is configured for this node.
+  dynamic "initialization" {
+    for_each = contains(keys(var.worker_ip_addresses), each.key) ? [1] : []
+    content {
+      datastore_id = local.cloudinit_datastore
+
+      ip_config {
+        ipv4 {
+          address = var.worker_ip_addresses[each.key]
+          gateway = var.network_gateway
+        }
+      }
+
+      dns {
+        servers = var.network_dns_servers
+      }
+    }
   }
 
   network_device {
